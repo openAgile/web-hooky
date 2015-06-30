@@ -39,7 +39,7 @@ curl -i -X POST \
   "queryInterval": 5000,
   "hookUrl": "http://requestb.in/o0uouoo0"
  }' \
- 'http://localhost:9090/hook?queryUrl'
+ 'http://localhost:9090/hook'
 
 */
 
