@@ -1,4 +1,4 @@
-var PORT = 9090;
+var PORT = process.env.PORT || 9090;
 
 /* Example usage:
 
