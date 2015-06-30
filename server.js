@@ -13,9 +13,7 @@ Second:
 
 You must POST the definition of a hook to the server at /hook. Example:
 
-The queryUrl should be without the http:// or https://, like:
-
-  www7.v1host.com/V1Production/api/ActivityStream/Scope%3a653184?instart_disable_injection=true
+  https://www7.v1host.com/V1Production/api/ActivityStream/Scope%3a653184
 
 It is the URL for where to read data from, coupled with the creds and protocol.
 
@@ -60,24 +58,69 @@ app.post('/hook', function(req, res) {
   var hook = req.body;
   var queryCreds = hook.queryCreds;
   var queryUrl = hook.queryUrl;
-  var queryProtocol = hook.queryProtocol || 'https';
+  var queryUrlNoCreds = queryUrl;
+  var queryRequeryParamsTemplate = hook.queryRequeryParamsTemplate || null;
+  var queryRequeryProperty = hook.queryRequeryProperty || 'body.id';
+  var queryResultType = hook.queryResultType || 'array';
+  var queryResultItemIndex = hook.queryResultItemIndex || 0;
+  // In the form of body[0].id or body.id
+  var queryRequeryValue = null;
+  var queryResultJsonIgnore = hook.queryResultJsonIgnore || '[]';
+  var queryProtocol = 'http';
+
+  if (queryUrl.indexOf('http://') === 0) {
+    queryUrl = queryUrl.substr(7);
+  } else if (queryUrl.indexOf('https://') === 0) {
+    console.log('queryUrl:');
+    queryUrl = queryUrl.substr(8);
+    queryProtocol = 'https';
+    console.log(queryUrl + '->' + queryProtocol);
+  }
   var queryInterval = hook.queryInterval || 5000;
   var hookUrl = hook.hookUrl;
 
-  queryUrl = queryProtocol + '://' + queryCreds + '@' + queryUrl;
+  var queryUrlInitial = queryProtocol + '://' + queryCreds + '@' + queryUrl;
+
+  console.log('init:' + queryUrlInitial);
 
   var poller = new TimerJob({
     interval: queryInterval
   }, function(done) {
+    var querySourceUrl = queryUrlInitial;
+
+    if (queryRequeryValue) {
+      querySourceUrl = queryUrlInitial + '?' + queryRequeryParamsTemplate.replace(':' + queryRequeryProperty, queryRequeryValue);
+    } 
+
     request({
-      url: queryUrl,
+      url: querySourceUrl,
       headers: {
         'Accept': 'application/json'
       }
     }, function(error, response, body) {
       if (!error) {
-        console.log('GET successful, fetched this many bytes from ' + hook.queryUrl + ': ' + body.length);
+        var data = JSON.parse(body);
+        console.log('\nGET successful, fetched ' + body.length + ' byes from ' + queryUrlNoCreds);
         console.log('POSTing now to: ' + hookUrl);
+
+        if (queryResultJsonIgnore !== undefined
+          && body !== queryResultJsonIgnore
+          && queryRequeryProperty
+          && queryRequeryParamsTemplate) {
+
+          if (queryResultType === 'array') {
+            queryRequeryValue = _.get(data[queryResultItemIndex], queryRequeryProperty);
+          } else {
+            queryRequeryValue = _.get(data, queryRequeryProperty);
+          }
+          console.log('Found the queryRequeryValue: ' + queryRequeryValue);
+        }
+
+        if (queryResultJsonIgnore !== undefined && body === queryResultJsonIgnore) {
+          console.log('Nothing new found at, not executing POST to webhook ' + hookUrl);
+          return done();
+        }
+
         request.post({
           headers: {
             'Content-Type': 'application/json'
@@ -96,7 +139,7 @@ app.post('/hook', function(req, res) {
           }
         });
       } else {
-        console.error('Error when sending GET to: ' + hook.queryUrl);
+        console.error('Error when sending GET to: ' + queryUrlNoCreds);
         console.error(error);
         done();
       }
@@ -105,7 +148,7 @@ app.post('/hook', function(req, res) {
   poller.start();
   var id = uuid.v4();
   pollers[id] = poller;
-  res.send('Created webhook job with id: ' + id + ' that will query from: ' + hook.queryUrl + ' and post to: ' + hook.hookUrl);
+  res.send('Created webhook job with id: ' + id + ' that will query from: ' + queryUrlNoCreds + ' and post to: ' + hookUrl);
 });
 
 app.get('/hooks', function(req, res) {
@@ -128,7 +171,7 @@ app.delete('/hooks', function(req, res) {
     pollers[key].stop();
     count++;
   });
-  res.send('Stopped ' count + ' of ' + keys.length + ' webhook jobs');
+  res.send('Stopped ' + count + ' of ' + keys.length + ' webhook jobs');
 });
 
 app.listen(PORT);
