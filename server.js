@@ -1,4 +1,4 @@
-var PORT = 9090;
+var PORT = process.env.PORT || 9090;
 
 /* Example usage:
 
@@ -105,7 +105,7 @@ app.post('/hook', function(req, res) {
   poller.start();
   var id = uuid.v4();
   pollers[id] = poller;
-  res.send('Created hook job ' + id + ' that will query from: ' + hook.queryUrl + ' and post to: ' + hook.hookUrl);
+  res.send('Created webhook job with id: ' + id + ' that will query from: ' + hook.queryUrl + ' and post to: ' + hook.hookUrl);
 });
 
 app.get('/hooks', function(req, res) {
@@ -128,7 +128,7 @@ app.delete('/hooks', function(req, res) {
     pollers[key].stop();
     count++;
   });
-  res.send('Stopped ' + count + ' webhook jobs.');
+  res.send('Stopped ' count + ' of ' + keys.length + ' webhook jobs');
 });
 
 app.listen(PORT);
