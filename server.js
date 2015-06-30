@@ -1,4 +1,4 @@
-var PORT = process.env.PORT || 9090;
+var PORT = 9090;
 
 /* Example usage:
 
@@ -47,9 +47,13 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var request = require('request');
 var TimerJob = require('timer-jobs');
+var uuid = require('uuid');
+var _ = require('lodash');
 
 var app = express();
 app.use(bodyParser.json());
+
+var pollers = {};
 
 app.post('/hook', function(req, res) {
   'use strict';
@@ -99,7 +103,32 @@ app.post('/hook', function(req, res) {
     });
   });
   poller.start();
-  res.send('Created hook job that will query from: ' + hook.queryUrl + ' and post to: ' + hook.hookUrl);
+  var id = uuid.v4();
+  pollers[id] = poller;
+  res.send('Created hook job ' + id + ' that will query from: ' + hook.queryUrl + ' and post to: ' + hook.hookUrl);
+});
+
+app.get('/hooks', function(req, res) {
+  res.json(_.keys(pollers));
+});
+
+app.delete('/hook/:id', function(req, res) {
+  if (pollers[req.params.id]) {
+    pollers[req.params.id].stop();
+    res.send('Stopped webhook job with id: ' + req.params.id);
+  } else {
+    res.send('Could not find webhook job with id: ' + req.params.id);
+  }
+});
+
+app.delete('/hooks', function(req, res) {
+  var keys = _.keys(pollers);
+  var count = 0;
+  _.each(keys, function(key) {
+    pollers[key].stop();
+    count++;
+  });
+  res.send('Stopped ' + count + ' webhook jobs.');
 });
 
 app.listen(PORT);
