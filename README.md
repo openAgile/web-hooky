@@ -36,19 +36,27 @@ curl -i -X POST \
 
 # JSON payload parameters
 
-## queryUrl: The source URL to query and requery at a specified interval
+## queryUrl
+
+The source URL to query and requery at a specified interval
 
 example: "https://www7.v1host.com/V1Production/api/ActivityStream/Scope%3a653184"
 
-## hookUrl: The target URL to which the results of querying and requerying `queryUrl` will be POSTed
+## hookUrl
+
+The target URL to which the results of querying and requerying `queryUrl` will be POSTed
 
 example: http://requestb.in/o0uouoo0
 
-## queryInterval: Polling interval in milliseconds. 
+## queryInterval
+
+Polling interval in milliseconds
 
 example: 5000
 
-## queryRequeryParamsTemplate: a template for additional query parameters to include on requery attempts
+## queryRequeryParamsTemplate
+
+A template for additional query parameters to include on requery attempts
 
 example: for VersionOne Activity Stream, it's "activityId=:body.id&direction=forward"
 
