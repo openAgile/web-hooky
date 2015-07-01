@@ -1,5 +1,5 @@
 # web-hooky
-Does a GET against a queryUrl on an interval, then does a POST to a hookUrl. You can specify Basic auth credentials and other options.
+Performs a GET against a source `queryUrl` and requries per `queryInterval`, then does a POST to `hookUrl`. You can specify Basic auth credentials and other options.
 
 # Getting started
 
@@ -25,8 +25,8 @@ curl -i -X POST \
    -H "Content-Type:application/json" \
    -d \
 '{
-  	"queryCreds": "jogoshugh:SECRET",
-  	"queryUrl": "https://www7.v1host.com/V1Production/api/ActivityStream/Scope%3a653184",
+  	"queryCreds": "admin:admin",
+  	"queryUrl": "https://www14.v1host.com/v1sdktesting/api/ActivityStream/Story%3a1124",
   	"queryRequeryParamsTemplate": "activityId=:body.id&direction=forward",
   	"queryInterval": 5000,
   	"hookUrl": "http://requestb.in/ol98pmol"
