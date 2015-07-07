@@ -129,6 +129,7 @@ app.get('/hooks', function(req, res) {
 app.delete('/hook/:id', function(req, res) {
   if (pollers[req.params.id]) {
     pollers[req.params.id].stop();
+    delete pollers[req.params.id];
     res.send('Stopped webhook job with id: ' + req.params.id);
   } else {
     res.send('Could not find webhook job with id: ' + req.params.id);
@@ -140,6 +141,7 @@ app.delete('/hooks', function(req, res) {
   var count = 0;
   _.each(keys, function(key) {
     pollers[key].stop();
+    delete pollers[key];
     count++;
   });
   res.send('Stopped ' + count + ' of ' + keys.length + ' webhook jobs');
