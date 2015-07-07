@@ -52,6 +52,7 @@ app.post('/hook', function(req, res) {
     } 
 
     request({
+      rejectUnauthorized: false,
       url: querySourceUrl,
       headers: {
         'Accept': 'application/json'
