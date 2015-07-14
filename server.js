@@ -1,5 +1,4 @@
 var PORT = process.env.PORT || 9090;
-
 var express = require('express');
 var bodyParser = require('body-parser');
 var request = require('request');
@@ -52,34 +51,14 @@ app.post('/hook', function(req, res) {
     } 
 
     request({
+      rejectUnauthorized: false,
       url: querySourceUrl,
       headers: {
         'Accept': 'application/json'
       }
     }, function(error, response, body) {
-      if (!error) {
-        var data = JSON.parse(body);
-        console.log('\nGET successful, fetched ' + body.length + ' byes from ' + queryUrlNoCreds);
-        console.log('POSTing now to: ' + hookUrl);
 
-        if (queryResultJsonIgnore !== undefined
-          && body !== queryResultJsonIgnore
-          && queryRequeryProperty
-          && queryRequeryParamsTemplate) {
-
-          if (queryResultType === 'array') {
-            queryRequeryValue = _.get(data[queryResultItemIndex], queryRequeryProperty);
-          } else {
-            queryRequeryValue = _.get(data, queryRequeryProperty);
-          }
-          console.log('Found the queryRequeryValue: ' + queryRequeryValue);
-        }
-
-        if (queryResultJsonIgnore !== undefined && body === queryResultJsonIgnore) {
-          console.log('Nothing new found at, not executing POST to webhook ' + hookUrl);
-          return done();
-        }
-
+      function sendPost(body) {
         request.post({
           headers: {
             'Content-Type': 'application/json'
@@ -97,6 +76,39 @@ app.post('/hook', function(req, res) {
             done();
           }
         });
+      }
+
+      if (!error) {
+        var data = JSON.parse(body);
+        console.log('\nGET successful, fetched ' + body.length + ' byes from ' + queryUrlNoCreds);
+
+        if (queryResultJsonIgnore !== undefined && body === queryResultJsonIgnore) {
+          console.log('Nothing new found at, not executing POST to webhook ' + hookUrl);
+          return done();
+        }
+
+        console.log('POSTing now to: ' + hookUrl);
+
+        if (queryResultJsonIgnore !== undefined
+          && body !== queryResultJsonIgnore
+          && queryRequeryProperty
+          && queryRequeryParamsTemplate) {
+
+          if (queryResultType === 'array') {
+            queryRequeryValue = _.get(data[queryResultItemIndex], queryRequeryProperty);
+
+            _.forEach(data, function(individualBody) {
+              sendPost(JSON.stringify(individualBody));
+            });
+
+          } else {
+            queryRequeryValue = _.get(data, queryRequeryProperty);
+            sendPost(body);
+          }
+          console.log('Found the queryRequeryValue: ' + queryRequeryValue);
+        }
+
+
       } else {
         console.error('Error when sending GET to: ' + queryUrlNoCreds);
         console.error(error);
@@ -117,6 +129,7 @@ app.get('/hooks', function(req, res) {
 app.delete('/hook/:id', function(req, res) {
   if (pollers[req.params.id]) {
     pollers[req.params.id].stop();
+    delete pollers[req.params.id];
     res.send('Stopped webhook job with id: ' + req.params.id);
   } else {
     res.send('Could not find webhook job with id: ' + req.params.id);
@@ -128,6 +141,7 @@ app.delete('/hooks', function(req, res) {
   var count = 0;
   _.each(keys, function(key) {
     pollers[key].stop();
+    delete pollers[key];
     count++;
   });
   res.send('Stopped ' + count + ' of ' + keys.length + ' webhook jobs');
