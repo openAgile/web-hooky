@@ -78,16 +78,45 @@ app.post('/hook', function(req, res) {
         });
       }
 
+      function onlyTargetsThatAreStatusChanges(target) {
+        return target.name == "Status";
+      }
+
+      function projectToPayload(individualBody) {
+
+        function removeMoment(oidTokenWithMoment) {
+          var indexOfMomentToken = oidTokenWithMoment.lastIndexOf(':');
+          return oidTokenWithMoment.substring(0, indexOfMomentToken);
+        }
+
+        var payload = {};
+        payload.object = {
+          id: removeMoment(individualBody.body.object.id),
+          assetType: individualBody.body.object.assetType,
+          displayName: individualBody.body.object.displayName,
+          number: individualBody.body.object.number,
+          assetState: individualBody.body.object.assetState,
+          scope: removeMoment(individualBody.body.object.scope)
+        };
+
+        payload.summary = individualBody.body.summary;
+        payload.event = "StatusChange";
+
+        var statusChangeTarget = _.filter(individualBody.body.target, onlyTargetsThatAreStatusChanges)[0];
+
+        payload.newStatus = statusChangeTarget ? statusChangeTarget.newValue : 'REMOVETHIS';
+
+        return payload;
+      }
+
       if (!error) {
         var data = JSON.parse(body);
         console.log('\nGET successful, fetched ' + body.length + ' byes from ' + queryUrlNoCreds);
 
         if (queryResultJsonIgnore !== undefined && body === queryResultJsonIgnore) {
-          console.log('Nothing new found at, not executing POST to webhook ' + hookUrl);
+          console.log('Nothing new found, not executing POST to webhook ' + hookUrl);
           return done();
         }
-
-        console.log('POSTing now to: ' + hookUrl);
 
         if (queryResultJsonIgnore !== undefined
           && body !== queryResultJsonIgnore
@@ -97,18 +126,33 @@ app.post('/hook', function(req, res) {
           if (queryResultType === 'array') {
             queryRequeryValue = _.get(data[queryResultItemIndex], queryRequeryProperty);
 
-            _.forEach(data, function(individualBody) {
-              sendPost(JSON.stringify(individualBody));
+            var itemsWithStatusChanges = _.filter(data, function(item) {
+              return _.some(item.body.target, onlyTargetsThatAreStatusChanges);
             });
 
+            var postsMade = 0;
+            _.forEach(itemsWithStatusChanges, function(individualBody) {
+              postsMade++;
+              sendPost(JSON.stringify(projectToPayload(individualBody)));
+            });
+
+            if (postsMade > 0) {
+              console.log('Found ' + postsMade + ' events with Status changes and POSTed to webhook ' + hookUrl);
+            } else {
+              console.log('Nothing with Status changes found, not executing POST to webhook ' + hookUrl);
+            }
           } else {
+            // NOTE: this case is not reached when using this code with VersionOne Activity Stream,
+            // since it always returns an Array. It's only hear for speculative reuse purposes and
+            // wide-eyed dreams of generic reuse.
             queryRequeryValue = _.get(data, queryRequeryProperty);
-            sendPost(body);
+            if (_.some(data.body.target, onlyTargetsThatAreStatusChanges)) {
+              sendPost(projectToPayload(data));
+            }
           }
           console.log('Found the queryRequeryValue: ' + queryRequeryValue);
+          done();
         }
-
-
       } else {
         console.error('Error when sending GET to: ' + queryUrlNoCreds);
         console.error(error);
