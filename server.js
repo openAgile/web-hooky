@@ -89,6 +89,11 @@ app.post('/hook', function(req, res) {
           return oidTokenWithMoment.substring(0, indexOfMomentToken);
         }
 
+        function getAssetTypeAndId(oidTokenWithMoment) {
+          var withoutMoment = removeMoment(oidTokenWithMoment);
+          return withoutMoment.replace(':', '/');
+        }
+
         var payload = {};
         payload.object = {
           id: removeMoment(individualBody.body.object.id),
@@ -101,6 +106,7 @@ app.post('/hook', function(req, res) {
 
         payload.summary = individualBody.body.summary;
         payload.event = "StatusChange";
+        payload.assetUrl = "rest-1.v1/Data/" + getAssetTypeAndId(individualBody.body.object.id);
 
         var statusChangeTarget = _.filter(individualBody.body.target, onlyTargetsThatAreStatusChanges)[0];
 
