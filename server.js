@@ -64,6 +64,7 @@ app.post('/hook', function(req, res) {
             'Content-Type': 'application/json'
           },
           url: hookUrl,
+          rejectUnauthorized: false,
           body: body
         }, function(err, resp, bod) {
           if (err) {
@@ -85,6 +86,7 @@ app.post('/hook', function(req, res) {
       function projectToPayload(individualBody) {
 
         function removeMoment(oidTokenWithMoment) {
+          if (!oidTokenWithMoment) return '';
           var indexOfMomentToken = oidTokenWithMoment.lastIndexOf(':');
           return oidTokenWithMoment.substring(0, indexOfMomentToken);
         }
@@ -95,6 +97,7 @@ app.post('/hook', function(req, res) {
         }
 
         var payload = {};
+
         payload.object = {
           id: removeMoment(individualBody.body.object.id),
           assetType: individualBody.body.object.assetType,
@@ -149,8 +152,8 @@ app.post('/hook', function(req, res) {
             }
           } else {
             // NOTE: this case is not reached when using this code with VersionOne Activity Stream,
-            // since it always returns an Array. It's only hear for speculative reuse purposes and
-            // wide-eyed dreams of generic reuse.
+            // since it always returns an Array. It's only here for speculative, wide-eyed dreams
+            // of generic reuse.
             queryRequeryValue = _.get(data, queryRequeryProperty);
             if (_.some(data.body.target, onlyTargetsThatAreStatusChanges)) {
               sendPost(projectToPayload(data));
