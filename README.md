@@ -62,4 +62,4 @@ example: for VersionOne Activity Stream, it's "activityId=:body.id&direction=for
 
 ## More  
 
-There are other defaults inside the code that currently apply to VersionOne Activity Stream.
+There are other defaults inside the code that currently apply to VersionOne ActivityStream.
