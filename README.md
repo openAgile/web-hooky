@@ -1,5 +1,5 @@
 # web-hooky
-Performs a GET against a source `queryUrl` and requries per `queryInterval`, then does a POST to `hookUrl`. You can specify Basic auth credentials and other options. This is a working prototype, but not a supported product. Use at your own disrection.
+Performs a GET against a source `queryUrl` and requries per `queryInterval`, then does a POST to `hookUrl`. You can specify Basic auth credentials and other options. This is a working prototype, but not a supported product. Use at your own discretion.
 
 # Getting started
 
